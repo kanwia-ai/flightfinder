@@ -7,7 +7,7 @@ import click
 from rich.console import Console
 from rich.prompt import Prompt
 
-from flightfinder.api.serpapi import SerpAPIClient
+from flightfinder.api.serpapi import SerpAPIClient, SerpAPIError
 from flightfinder.compare import PriceComparator
 from flightfinder.config import get_config
 from flightfinder.export import N8NExporter
@@ -43,7 +43,11 @@ async def run_search(params: SearchParams) -> list:
 
     console.print(f"\n[dim]Searching {len(params.origins)} origins...[/dim]")
 
-    results = await orchestrator.search(params)
+    try:
+        results = await orchestrator.search(params)
+    except SerpAPIError as e:
+        console.print(f"[red]Search error: {e}[/red]")
+        return []
 
     # Apply filters
     if params.max_price:

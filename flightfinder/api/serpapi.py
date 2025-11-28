@@ -58,6 +58,10 @@ class SerpAPIClient:
 
     def _parse_response(self, data: dict, is_round_trip: bool) -> list[FlightOption]:
         """Parse API response into FlightOption objects."""
+        # Bug 2 fix: Check for API error messages
+        if "error" in data:
+            raise SerpAPIError(data["error"])
+
         options = []
         all_flights = data.get("best_flights", []) + data.get("other_flights", [])
         booking_url = data.get("search_metadata", {}).get("google_flights_url", "")
@@ -67,10 +71,15 @@ class SerpAPIClient:
             if not legs:
                 continue
 
+            # Bug 3 fix: Skip flights with no price or $0
+            price = flight_data.get("price")
+            if price is None or float(price) <= 0:
+                continue
+
             option = FlightOption(
                 outbound_legs=legs,
                 return_legs=None,  # TODO: Parse return flights
-                total_price=float(flight_data.get("price", 0)),
+                total_price=float(price),
                 currency="USD",
                 booking_type=BookingType.ROUND_TRIP if is_round_trip else BookingType.ONE_WAY,
                 booking_url=booking_url,
@@ -83,16 +92,17 @@ class SerpAPIClient:
         """Parse flight segments into FlightLeg objects."""
         legs = []
         for flight in flights:
-            dep = flight.get("departure", {})
-            arr = flight.get("arrival", {})
+            # Real API has datetime in departure_airport.time and arrival_airport.time
+            dep_airport = flight.get("departure_airport", {})
+            arr_airport = flight.get("arrival_airport", {})
 
-            # Parse datetime
-            dep_dt = self._parse_datetime(dep.get("date", ""), dep.get("time", ""))
-            arr_dt = self._parse_datetime(arr.get("date", ""), arr.get("time", ""))
+            # Parse datetime - API returns "2025-12-14 11:00" format in .time field
+            dep_dt = self._parse_datetime(dep_airport.get("time", ""))
+            arr_dt = self._parse_datetime(arr_airport.get("time", ""))
 
             leg = FlightLeg(
-                origin=flight.get("departure_airport", {}).get("id", ""),
-                destination=flight.get("arrival_airport", {}).get("id", ""),
+                origin=dep_airport.get("id", ""),
+                destination=arr_airport.get("id", ""),
                 airline=flight.get("airline", ""),
                 flight_number=flight.get("flight_number", ""),
                 departure=dep_dt,
@@ -103,9 +113,9 @@ class SerpAPIClient:
 
         return legs
 
-    def _parse_datetime(self, date_str: str, time_str: str) -> datetime:
-        """Parse date and time strings into datetime."""
+    def _parse_datetime(self, datetime_str: str) -> datetime:
+        """Parse datetime string from API (format: '2025-12-14 11:00')."""
         try:
-            return datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+            return datetime.strptime(datetime_str, "%Y-%m-%d %H:%M")
         except ValueError:
             return datetime.now()
