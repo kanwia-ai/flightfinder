@@ -10,6 +10,7 @@ from rich.prompt import Prompt
 from flightfinder.api.serpapi import SerpAPIClient
 from flightfinder.compare import PriceComparator
 from flightfinder.config import get_config
+from flightfinder.export import N8NExporter
 from flightfinder.interactive import InteractiveSearch
 from flightfinder.models import SearchParams
 from flightfinder.output import OutputFormatter
@@ -131,6 +132,53 @@ def update_routes():
     """Refresh the airline routes database."""
     console.print("[yellow]Route database update not yet implemented.[/yellow]")
     console.print("This will download routes from OpenFlights database.")
+
+
+@main.group()
+def monitor():
+    """Manage saved flight monitors."""
+    pass
+
+
+@monitor.command("export")
+@click.option("--name", required=True, help="Monitor name")
+@click.option(
+    "--from", "origins", required=True, help="Origin airports (comma-separated)"
+)
+@click.option("--to", "destination", required=True, help="Destination airport")
+@click.option("--depart", required=True, help="Departure date")
+@click.option("--return", "return_date", help="Return date")
+@click.option("--alert-below", type=float, help="Alert when price below this")
+@click.option("--schedule", default="0 9 * * *", help="Cron schedule")
+def monitor_export(
+    name: str,
+    origins: str,
+    destination: str,
+    depart: str,
+    return_date: str | None,
+    alert_below: float | None,
+    schedule: str,
+):
+    """Export a monitor as n8n workflow JSON."""
+    # Build the command
+    cmd_parts = ["flightfinder", "quick", origins, destination, depart]
+    if return_date:
+        cmd_parts.append(return_date)
+    cmd_parts.append("--json")
+    command = " ".join(cmd_parts)
+
+    exporter = N8NExporter()
+    workflow = exporter.generate_workflow(
+        name=name,
+        command=command,
+        alert_threshold=alert_below,
+        schedule=schedule,
+    )
+
+    click.echo(workflow)
+    console.print(
+        "\n[green]Workflow exported. Import into n8n to start monitoring.[/green]"
+    )
 
 
 if __name__ == "__main__":

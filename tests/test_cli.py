@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 from click.testing import CliRunner
 
-from flightfinder.cli import main, quick, search, update_routes
+from flightfinder.cli import main, monitor_export, quick, search, update_routes
 
 
 class TestCLI:
@@ -98,3 +98,69 @@ class TestUpdateRoutesCommand:
         result = runner.invoke(update_routes)
         assert result.exit_code == 0
         assert "not yet implemented" in result.output or "Route" in result.output
+
+
+class TestMonitorExportCommand:
+    """Tests for monitor export command."""
+
+    def test_monitor_export_generates_workflow(self):
+        """Test monitor export generates n8n workflow JSON."""
+        runner = CliRunner()
+        result = runner.invoke(
+            monitor_export,
+            [
+                "--name",
+                "test-monitor",
+                "--from",
+                "JFK",
+                "--to",
+                "YAO",
+                "--depart",
+                "2025-03-15",
+            ],
+        )
+        assert result.exit_code == 0
+        assert '"name": "test-monitor"' in result.output
+        assert "n8n-nodes-base.scheduleTrigger" in result.output
+
+    def test_monitor_export_with_return_date(self):
+        """Test monitor export with return date."""
+        runner = CliRunner()
+        result = runner.invoke(
+            monitor_export,
+            [
+                "--name",
+                "roundtrip",
+                "--from",
+                "JFK",
+                "--to",
+                "YAO",
+                "--depart",
+                "2025-03-15",
+                "--return",
+                "2025-03-25",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "2025-03-25" in result.output
+
+    def test_monitor_export_with_alert_threshold(self):
+        """Test monitor export with alert threshold."""
+        runner = CliRunner()
+        result = runner.invoke(
+            monitor_export,
+            [
+                "--name",
+                "alert-test",
+                "--from",
+                "JFK",
+                "--to",
+                "YAO",
+                "--depart",
+                "2025-03-15",
+                "--alert-below",
+                "1200",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "1200" in result.output
