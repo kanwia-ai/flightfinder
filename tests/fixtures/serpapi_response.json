@@ -1,0 +1,35 @@
+{
+  "best_flights": [
+    {
+      "flights": [
+        {
+          "departure_airport": {"id": "JFK", "name": "John F. Kennedy International Airport"},
+          "arrival_airport": {"id": "CDG", "name": "Paris Charles de Gaulle Airport"},
+          "airline": "Air France",
+          "airline_logo": "https://example.com/logo.png",
+          "flight_number": "AF 007",
+          "departure": {"time": "18:30", "date": "2025-03-15"},
+          "arrival": {"time": "08:15", "date": "2025-03-16"},
+          "duration": 465,
+          "airplane": "Boeing 777"
+        },
+        {
+          "departure_airport": {"id": "CDG", "name": "Paris Charles de Gaulle Airport"},
+          "arrival_airport": {"id": "YAO", "name": "Yaounde Nsimalen International"},
+          "airline": "Air France",
+          "flight_number": "AF 840",
+          "departure": {"time": "10:30", "date": "2025-03-16"},
+          "arrival": {"time": "17:45", "date": "2025-03-16"},
+          "duration": 375
+        }
+      ],
+      "total_duration": 960,
+      "price": 1203,
+      "type": "Round trip"
+    }
+  ],
+  "other_flights": [],
+  "search_metadata": {
+    "google_flights_url": "https://www.google.com/travel/flights?hl=en&gl=us"
+  }
+}
