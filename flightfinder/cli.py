@@ -91,7 +91,14 @@ def display_results(results: list):
 @click.argument("destination")
 @click.argument("depart_date")
 @click.argument("return_date", required=False)
-def quick(origin: str, destination: str, depart_date: str, return_date: str | None):
+@click.option("--json", "output_json", is_flag=True, help="Output as JSON for n8n")
+def quick(
+    origin: str,
+    destination: str,
+    depart_date: str,
+    return_date: str | None,
+    output_json: bool,
+):
     """Quick search with defaults: flightfinder quick JFK YAO 2025-03-15 2025-03-25"""
     params = SearchParams(
         origins=[o.strip().upper() for o in origin.split(",")],
@@ -101,7 +108,12 @@ def quick(origin: str, destination: str, depart_date: str, return_date: str | No
     )
 
     results = asyncio.run(run_search(params))
-    display_results(results)
+
+    if output_json:
+        formatter = OutputFormatter()
+        click.echo(formatter.to_json(results))
+    else:
+        display_results(results)
 
 
 @main.command()

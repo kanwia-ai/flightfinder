@@ -1,5 +1,6 @@
 """Tests for Rich output formatting."""
 
+import json
 from datetime import datetime
 
 import pytest
@@ -112,3 +113,98 @@ class TestOutputFormatter:
         options = [sample_option, sample_option, sample_option]
         table = formatter.build_results_table(options)
         assert table.row_count == 3
+
+
+class TestJSONOutput:
+    """Tests for JSON output formatting."""
+
+    @pytest.fixture
+    def sample_option(self):
+        """Create sample flight option."""
+        outbound = FlightLeg(
+            origin="JFK",
+            destination="YAO",
+            airline="Air France",
+            flight_number="AF007",
+            departure=datetime(2025, 3, 15, 18, 30),
+            arrival=datetime(2025, 3, 16, 17, 45),
+            duration_minutes=840,
+        )
+        return FlightOption(
+            outbound_legs=[outbound],
+            return_legs=None,
+            total_price=1203.0,
+            currency="USD",
+            booking_type=BookingType.ROUND_TRIP,
+            booking_url="https://google.com/flights/123",
+        )
+
+    @pytest.fixture
+    def formatter(self):
+        """Create formatter."""
+        return OutputFormatter()
+
+    def test_to_dict(self, formatter, sample_option):
+        """Test converting option to JSON-serializable dict."""
+        result = formatter.to_dict(sample_option)
+
+        assert result["price"] == 1203.0
+        assert result["currency"] == "USD"
+        assert result["booking_type"] == "round-trip"
+        assert result["booking_url"] == "https://google.com/flights/123"
+        assert "outbound" in result
+
+    def test_to_dict_outbound_details(self, formatter, sample_option):
+        """Test outbound leg details in dict."""
+        result = formatter.to_dict(sample_option)
+
+        assert len(result["outbound"]) == 1
+        leg = result["outbound"][0]
+        assert leg["origin"] == "JFK"
+        assert leg["destination"] == "YAO"
+        assert leg["airline"] == "Air France"
+        assert leg["flight_number"] == "AF007"
+
+    def test_to_json_string(self, formatter, sample_option):
+        """Test converting options to JSON string."""
+        json_str = formatter.to_json([sample_option])
+
+        data = json.loads(json_str)
+        assert len(data) == 1
+        assert data[0]["price"] == 1203.0
+
+    def test_to_json_empty_list(self, formatter):
+        """Test converting empty list to JSON."""
+        json_str = formatter.to_json([])
+
+        data = json.loads(json_str)
+        assert data == []
+
+    def test_to_dict_with_return_flight(self, formatter):
+        """Test dict includes return flight details."""
+        outbound = FlightLeg(
+            "JFK", "YAO", "AF", "AF007",
+            datetime(2025, 3, 15, 18, 30),
+            datetime(2025, 3, 16, 17, 45),
+            840,
+        )
+        return_leg = FlightLeg(
+            "YAO", "JFK", "ET", "ET100",
+            datetime(2025, 3, 25, 10, 0),
+            datetime(2025, 3, 25, 20, 0),
+            600,
+        )
+        option = FlightOption(
+            outbound_legs=[outbound],
+            return_legs=[return_leg],
+            total_price=1500.0,
+            currency="USD",
+            booking_type=BookingType.ROUND_TRIP,
+            booking_url="https://example.com",
+        )
+
+        result = formatter.to_dict(option)
+
+        assert len(result["return"]) == 1
+        assert result["return"][0]["origin"] == "YAO"
+        assert result["return"][0]["destination"] == "JFK"

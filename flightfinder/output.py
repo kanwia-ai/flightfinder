@@ -1,5 +1,6 @@
 """Rich terminal output formatting."""
 
+import json
 from datetime import datetime
 
 from rich.console import Console
@@ -128,3 +129,43 @@ class OutputFormatter:
                 )
 
         self.console.print(f"\n[dim]Booking: {option.booking_url}[/dim]")
+
+    def to_dict(self, option: FlightOption) -> dict:
+        """Convert FlightOption to JSON-serializable dict."""
+        return {
+            "price": option.total_price,
+            "currency": option.currency,
+            "booking_type": option.booking_type.value,
+            "booking_url": option.booking_url,
+            "is_skiplagged": option.is_skiplagged,
+            "outbound": [
+                {
+                    "origin": leg.origin,
+                    "destination": leg.destination,
+                    "airline": leg.airline,
+                    "flight_number": leg.flight_number,
+                    "departure": leg.departure.isoformat(),
+                    "arrival": leg.arrival.isoformat(),
+                    "duration_minutes": leg.duration_minutes,
+                }
+                for leg in option.outbound_legs
+            ],
+            "return": [
+                {
+                    "origin": leg.origin,
+                    "destination": leg.destination,
+                    "airline": leg.airline,
+                    "flight_number": leg.flight_number,
+                    "departure": leg.departure.isoformat(),
+                    "arrival": leg.arrival.isoformat(),
+                    "duration_minutes": leg.duration_minutes,
+                }
+                for leg in (option.return_legs or [])
+            ],
+            "stops_outbound": option.total_stops_outbound,
+            "stops_return": option.total_stops_return,
+        }
+
+    def to_json(self, options: list[FlightOption]) -> str:
+        """Convert list of options to JSON string."""
+        return json.dumps([self.to_dict(opt) for opt in options], indent=2)
