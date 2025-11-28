@@ -1,0 +1,10 @@
+{
+  "testCommand": "source .venv/bin/activate && pytest --cov=flightfinder --cov-report=term-missing",
+  "lintCommand": "source .venv/bin/activate && ruff check .",
+  "requireCoverage": true,
+  "minCoverage": 80,
+  "autoFix": true,
+  "maxAttempts": 50,
+  "stopOnMorning": true,
+  "morningHour": 7
+}
