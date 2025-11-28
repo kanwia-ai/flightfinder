@@ -4,7 +4,15 @@ from datetime import datetime
 
 import httpx
 
-from flightfinder.models import BookingType, FlightLeg, FlightOption
+from flightfinder.models import BookingType, CabinClass, FlightLeg, FlightOption
+
+# SerpAPI travel_class values
+CABIN_CLASS_MAP = {
+    CabinClass.ECONOMY: 1,
+    CabinClass.PREMIUM_ECONOMY: 2,
+    CabinClass.BUSINESS: 3,
+    CabinClass.FIRST: 4,
+}
 
 
 class SerpAPIError(Exception):
@@ -30,6 +38,7 @@ class SerpAPIClient:
         destination: str,
         departure_date: str,
         return_date: str | None = None,
+        cabin: CabinClass = CabinClass.ECONOMY,
     ) -> list[FlightOption]:
         """Search for flights between airports."""
         params = {
@@ -37,6 +46,7 @@ class SerpAPIClient:
             "departure_id": origin,
             "arrival_id": destination,
             "outbound_date": departure_date,
+            "travel_class": CABIN_CLASS_MAP.get(cabin, 1),
             "api_key": self.api_key,
         }
         if return_date:

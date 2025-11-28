@@ -54,34 +54,55 @@ class OutputFormatter:
 
         table.add_column("#", justify="right", style="cyan")
         table.add_column("Price", justify="right", style="green")
-        table.add_column("Type", style="yellow")
+        table.add_column("Airline", style="blue")
         table.add_column("Route")
-        table.add_column("Outbound")
+        table.add_column("Depart", justify="center")
+        table.add_column("Arrive", justify="center")
         table.add_column("Stops", justify="center")
+        table.add_column("Layovers", style="dim")
 
         for i, option in enumerate(options, 1):
-            # Build route string
             if option.outbound_legs:
                 origin = option.outbound_legs[0].origin
                 dest = option.outbound_legs[-1].destination
-                route = f"{origin} -> {dest}"
+                route = f"{origin} → {dest}"
+
+                # Departure time
+                dep = option.outbound_legs[0].departure
+                depart = f"{self.format_date(dep)} {self.format_time(dep)}"
+
+                # Arrival time (final leg)
+                arr = option.outbound_legs[-1].arrival
+                arrive = f"{self.format_date(arr)} {self.format_time(arr)}"
+
+                # Airlines (unique, abbreviated)
+                airlines = []
+                for leg in option.outbound_legs:
+                    if leg.airline and leg.airline not in airlines:
+                        airlines.append(leg.airline)
+                airline_str = ", ".join(airlines[:2])  # Max 2 airlines shown
+                if len(airlines) > 2:
+                    airline_str += "..."
+
+                # Layover airports (middle destinations)
+                layovers = [leg.destination for leg in option.outbound_legs[:-1]]
+                layover_str = " → ".join(layovers) if layovers else "-"
             else:
                 route = "N/A"
-
-            # Outbound timing
-            if option.outbound_legs:
-                dep = option.outbound_legs[0].departure
-                outbound = f"{self.format_date(dep)} {self.format_time(dep)}"
-            else:
-                outbound = "N/A"
+                depart = "N/A"
+                arrive = "N/A"
+                airline_str = "N/A"
+                layover_str = "-"
 
             table.add_row(
                 str(i),
                 self.format_price(option.total_price, option.currency),
-                self.format_booking_type(option.booking_type),
+                airline_str,
                 route,
-                outbound,
+                depart,
+                arrive,
                 self.format_stops(option.total_stops_outbound),
+                layover_str,
             )
 
         return table

@@ -36,6 +36,7 @@ class SearchOrchestrator:
                     destination=combo.destination,
                     departure_date=combo.depart_date,
                     return_date=combo.return_date,
+                    cabin=params.cabin,
                 )
                 results.extend(options)
             except Exception:
